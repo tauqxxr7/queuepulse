@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.mypy_cache/
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+
+# Env and local state
+.env
+*.db
+*.sqlite
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Generated screenshots
+screenshots/*.png
