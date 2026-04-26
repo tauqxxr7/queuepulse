@@ -37,6 +37,7 @@ def clean_db():
     runtime_controls.consumer_paused = False
     yield
     Base.metadata.drop_all(bind=engine)
+    engine.dispose()
     Path("test_queuepulse.db").unlink(missing_ok=True)
 
 

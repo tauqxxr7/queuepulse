@@ -4,6 +4,38 @@ Use this flow for a 5-8 minute recruiter or engineering review demo.
 
 ## 1. Start The Stack
 
+### No-Docker Local Demo
+
+Use this path when WSL or Docker is unavailable.
+
+Terminal 1:
+
+```bash
+cd queuepulse/backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+Terminal 2:
+
+```bash
+cd queuepulse/frontend
+npm install
+npm run dev
+```
+
+Verify:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Local demo mode uses SQLite plus in-memory queue, presence, rate limiting, and runtime controls. The real distributed architecture uses RabbitMQ, Redis, and PostgreSQL in Docker mode.
+
+### Docker Demo
+
 ```bash
 cd queuepulse
 cp .env.example .env

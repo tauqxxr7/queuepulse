@@ -21,7 +21,8 @@
 - [x] Add Docker Compose, Dockerfiles, .env.example, Makefile, and load-test script.
 - [x] Add README and docs for architecture, API, system design, and resume bullets.
 - [x] Add detailed demo script and GitHub polish checklist.
-- [~] Run local syntax and backend test verification where possible.
+- [x] Add explicit no-Docker local mode with SQLite, in-memory queue, in-memory Redis replacement, and FastAPI background worker.
+- [x] Run local syntax, local backend smoke test, backend tests, Docker Compose config, and frontend build verification.
 
 ## Verification Log
 - Repository inspection: workspace was empty and not initialized as git.
@@ -33,3 +34,17 @@
 - Hardening fix: corrected simulation route helper shadowing so `/api/simulate/failure-rate` calls the shared-state setter instead of recursing.
 - Verification blocked by disk/page-file pressure after syntax and Compose validation; rerun dependency-based tests/builds on a machine with more free space.
 - Secret scan: no API key or secret assignments found in committed text files.
+- Local demo mode: `ENV=local` is the default and does not require RabbitMQ, Redis, PostgreSQL, Docker, or a separate worker process.
+- Local backend smoke test: started `python -m uvicorn app.main:app --port 8000`, verified `/health`, created a room, submitted a message, and confirmed local in-memory worker delivered it.
+- Backend tests: `python -m pytest app/tests` passed, 5 tests.
+- Frontend dependencies installed and `npm run build` passed after allowing Next.js build worker process spawning.
+- Release verification from Git-tracked `queuepulse` folder:
+  - `python -m pip install -r requirements.txt` passed.
+  - `python -m compileall app` passed.
+  - `python -m pytest app/tests` passed, 5 tests.
+  - `docker compose config` passed.
+  - Live backend smoke test passed: `/health`, room creation, message submission, local in-memory delivery, metrics, and insights.
+  - `npm install` passed.
+  - `npm audit --json` reported 0 vulnerabilities.
+  - `npm run build` passed.
+  - `npm run dev` page checks passed for `/`, `/chat`, `/dashboard`, and `/architecture`.

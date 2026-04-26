@@ -1,18 +1,40 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.db import init_db
+from app.db import SessionLocal, init_db
 from app.routes.api import router
+from app.services.messages import process_message
+from app.services.queue import MAIN_QUEUE, RETRY_QUEUE, queue_service
 from app.websocket.manager import websocket_manager
+
+
+async def _local_queue_handler(payload: dict) -> None:
+    with SessionLocal() as db:
+        await process_message(db, payload["message_id"])
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    yield
+    tasks: list[asyncio.Task] = []
+    if get_settings().is_local:
+        tasks = [
+            asyncio.create_task(queue_service.consume_forever(_local_queue_handler, MAIN_QUEUE)),
+            asyncio.create_task(queue_service.consume_forever(_local_queue_handler, RETRY_QUEUE)),
+        ]
+    try:
+        yield
+    finally:
+        for task in tasks:
+            task.cancel()
+        for task in tasks:
+            with suppress(asyncio.CancelledError):
+                await task
+        await queue_service.close()
 
 
 app = FastAPI(title="QueuePulse API", version="1.0.0", lifespan=lifespan)

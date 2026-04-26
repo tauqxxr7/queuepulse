@@ -41,6 +41,7 @@ services:
       context: ./backend
     env_file: .env.example
     environment:
+      ENV: docker
       DATABASE_URL: postgresql+psycopg2://queuepulse:queuepulse@postgres:5432/queuepulse
       REDIS_URL: redis://redis:6379/0
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
@@ -60,6 +61,7 @@ services:
     command: python -m app.workers.consumer
     env_file: .env.example
     environment:
+      ENV: docker
       DATABASE_URL: postgresql+psycopg2://queuepulse:queuepulse@postgres:5432/queuepulse
       REDIS_URL: redis://redis:6379/0
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/

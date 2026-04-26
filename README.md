@@ -6,7 +6,11 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Persistence-336791)
 ![Redis](https://img.shields.io/badge/Redis-Metrics%20%26%20Rate%20Limits-dc382d)
 
+A production-style distributed messaging infrastructure simulator with WebSockets, queueing, retries, DLQ, metrics, and observability.
+
 QueuePulse is a production-grade distributed messaging simulator designed to make the backend mechanics behind Slack and WhatsApp-style systems visible. It demonstrates WebSockets, async queueing, retries, dead-letter handling, idempotency, delivery guarantees, PostgreSQL persistence, Redis-backed rate limiting, shared runtime controls, and a polished observability dashboard.
+
+Portfolio description: QueuePulse simulates the backend infrastructure behind real-time messaging platforms, focusing on reliability, retry handling, delivery guarantees, and operational visibility.
 
 This is built as a recruiter-ready systems project: the UI is approachable, but the core value is the message pipeline, operational behavior, and architecture story.
 
@@ -70,6 +74,48 @@ QueuePulse models at-least-once delivery. Duplicate submissions are safe because
 
 ## Local Setup
 
+### Run Without Docker
+
+Use this mode when Docker, WSL, RabbitMQ, or Redis are unavailable. QueuePulse keeps the same API and UI behavior, but runs as a local simulation:
+
+- SQLite replaces PostgreSQL.
+- In-memory queues replace RabbitMQ.
+- In-memory presence, rate limiting, and runtime controls replace Redis.
+- FastAPI starts a local background worker so messages move from `queued` to `delivered` during demos.
+
+Backend:
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+- Frontend: http://localhost:3000
+- Backend health: http://localhost:8000/health
+
+For local mode, `.env` is optional because defaults are already local-first. To be explicit:
+
+```bash
+cp .env.example .env
+```
+
+### Run With Docker
+
+Docker mode uses the real infrastructure profile: PostgreSQL, Redis, RabbitMQ, FastAPI backend, worker, and Next.js frontend.
+
 ```bash
 cp .env.example .env
 docker compose up --build
@@ -83,14 +129,35 @@ Services:
 
 ## Verification Commands
 
+Local no-Docker verification:
+
 ```bash
+cd backend
+pip install -r requirements.txt
+python -m compileall app
+python -m pytest app/tests
+uvicorn app.main:app --reload --port 8000
+```
+
+Frontend verification:
+
+```bash
+cd frontend
+npm install
+npm run build
+npm run dev
+```
+
+Docker verification:
+
+```bash
+docker compose config
 docker compose up --build
 curl http://localhost:8000/health
-cd backend && pytest app/tests
 python scripts/load_test.py --users 50 --messages 500 --room demo
 ```
 
-Current local verification note: Python syntax and `docker compose config` were verified. Full backend tests and frontend build require dependency installation. In this environment, dependency installation was blocked by local disk/page-file pressure (`OSError: [Errno 28] No space left on device` during pip install), so those checks should be rerun on a machine with sufficient free space.
+Current verification: local backend import, syntax check, health endpoint, local message delivery smoke test, backend tests, frontend production build, and `docker compose config` have passed. Full `docker compose up --build` is not required for no-Docker demo mode and may be blocked on machines with unstable WSL.
 
 For local frontend development:
 
@@ -111,6 +178,8 @@ uvicorn app.main:app --reload
 python -m app.workers.consumer
 ```
 
+In no-Docker local mode, the separate worker command is optional because FastAPI starts an in-memory background worker automatically. In Docker mode, the dedicated worker container processes RabbitMQ messages.
+
 ## Demo Script
 
 1. Open `/dashboard` and note baseline metrics.
@@ -125,12 +194,14 @@ For a more detailed walkthrough, see [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
 ## Screenshots
 
-Add screenshots to `screenshots/`:
+Add screenshots to `screenshots/`. See [screenshots/README.md](screenshots/README.md).
 
 - `screenshots/landing.png`
-- `screenshots/chat.png`
+- `screenshots/chat-two-tabs.png`
 - `screenshots/dashboard.png`
 - `screenshots/architecture.png`
+- `screenshots/health-endpoint.png`
+- `screenshots/load-test.png`
 
 ## System Design Trade-Offs
 
@@ -138,6 +209,19 @@ Add screenshots to `screenshots/`:
 - SQLAlchemy sync sessions keep the code readable; production FastAPI deployments can move hot paths to async database drivers.
 - The dashboard uses API polling for metrics simplicity; WebSocket metrics streaming would be a natural extension.
 - Rule-based insights are deterministic and free; Gemini can be added behind `GEMINI_API_KEY` without changing the dashboard contract.
+- Local simulation mode trades distributed infrastructure fidelity for demo reliability on laptops where Docker or WSL is unavailable.
+- Docker mode preserves the real architecture with RabbitMQ, Redis, PostgreSQL, API, worker, and frontend services.
+
+## Local Mode Limitations
+
+- In-memory queues are single-process and reset on restart.
+- In-memory presence, rate limits, and runtime controls reset on restart.
+- SQLite replaces PostgreSQL for the local demo path.
+- Local mode is ideal for recruiter demos; Docker mode is the full distributed-system profile.
+
+## GitHub Topics
+
+Suggested topics: `fastapi`, `websocket`, `rabbitmq`, `redis`, `postgresql`, `distributed-systems`, `system-design`, `observability`, `queue`, `real-time-chat`, `nextjs`.
 
 ## Future Improvements
 

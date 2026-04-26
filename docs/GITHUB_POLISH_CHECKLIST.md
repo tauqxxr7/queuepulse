@@ -14,6 +14,8 @@ Distributed real-time messaging simulator with FastAPI WebSockets, RabbitMQ queu
 - postgresql
 - nextjs
 - observability
+- queue
+- real-time-chat
 - message-queue
 - system-design
 - full-stack
@@ -34,11 +36,11 @@ Use the README opening, architecture diagram, dashboard screenshot, and resume b
 Store final screenshots under `screenshots/`:
 
 - `landing.png`
-- `chat-two-clients.png`
-- `dashboard-healthy.png`
-- `dashboard-failures-dlq.png`
+- `chat-two-tabs.png`
+- `dashboard.png`
 - `architecture.png`
-- `rabbitmq-queues.png`
+- `health-endpoint.png`
+- `load-test.png`
 
 ## Demo Video Shots
 

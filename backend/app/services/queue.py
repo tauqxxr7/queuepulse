@@ -4,7 +4,10 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
-import aio_pika
+try:
+    import aio_pika
+except ModuleNotFoundError:  # Local demo mode can run without RabbitMQ client libraries installed.
+    aio_pika = None
 
 from app.config import get_settings
 
@@ -25,14 +28,15 @@ class QueueService:
             RETRY_QUEUE: deque(),
             DLQ_QUEUE: deque(),
         }
-        self._connection: aio_pika.RobustConnection | None = None
-        self._channel: aio_pika.abc.AbstractChannel | None = None
+        self._connection = None
+        self._channel = None
 
     async def connect(self) -> None:
-        if self._connection or not get_settings().rabbitmq_url:
+        settings = get_settings()
+        if self._connection or aio_pika is None or settings.is_local or not settings.rabbitmq_url:
             return
         try:
-            self._connection = await aio_pika.connect_robust(get_settings().rabbitmq_url)
+            self._connection = await aio_pika.connect_robust(settings.rabbitmq_url)
             self._channel = await self._connection.channel()
             for queue in (MAIN_QUEUE, RETRY_QUEUE, DLQ_QUEUE):
                 await self._channel.declare_queue(queue, durable=True)

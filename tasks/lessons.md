@@ -15,6 +15,8 @@
 - Operational insights are rule-based by default and require no paid API.
 - Dashboard simulation controls are backed by Redis when available so API requests affect the separate worker process under Docker; local tests still use the in-memory fallback.
 - Local verification can be limited by host resources; this review recorded the disk/page-file blocker explicitly in README and tasks rather than claiming tests passed.
+- Local demo mode must not import optional infrastructure clients at module import time. Redis and RabbitMQ clients are now optional so the app can start with only the local FastAPI stack installed.
+- SQLite test databases on Windows require disposing the SQLAlchemy engine before unlinking the file during teardown.
 
 ## Lessons Learned
 - A strong systems project is more impressive when the chat UI is only the entry point and the real story is the delivery pipeline.

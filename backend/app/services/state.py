@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 
-import redis
+try:
+    import redis
+except ModuleNotFoundError:  # Local demo mode can run without the Redis client installed.
+    redis = None
 
 from app.config import get_settings
 
@@ -14,15 +17,15 @@ class RuntimeControls:
 
 runtime_controls = RuntimeControls()
 
-_redis_client: redis.Redis | None = None
+_redis_client = None
 
 
-def _redis() -> redis.Redis | None:
+def _redis():
     global _redis_client
     if _redis_client is not None:
         return _redis_client
     settings = get_settings()
-    if not settings.redis_url:
+    if redis is None or settings.is_local or not settings.redis_url:
         return None
     try:
         _redis_client = redis.Redis.from_url(settings.redis_url, decode_responses=True, socket_connect_timeout=1)

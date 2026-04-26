@@ -1,7 +1,10 @@
 import time
 from collections import defaultdict, deque
 
-import redis
+try:
+    import redis
+except ModuleNotFoundError:  # Local demo mode can run without the Redis client installed.
+    redis = None
 
 from app.config import get_settings
 
@@ -13,7 +16,7 @@ class CacheService:
         self._room_presence: dict[str, set[str]] = defaultdict(set)
         self._limits: dict[str, deque[float]] = defaultdict(deque)
         settings = get_settings()
-        if settings.redis_url:
+        if redis and settings.use_external_services and settings.redis_url:
             try:
                 self._redis = redis.Redis.from_url(settings.redis_url, decode_responses=True, socket_connect_timeout=1)
                 self._redis.ping()
