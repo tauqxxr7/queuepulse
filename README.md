@@ -6,130 +6,216 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Persistence-336791)
 ![Redis](https://img.shields.io/badge/Redis-Metrics%20%26%20Rate%20Limits-dc382d)
 
-A production-style distributed messaging infrastructure simulator with WebSockets, queueing, retries, DLQ, metrics, and observability.
+QueuePulse is a production-style distributed messaging infrastructure simulator that demonstrates how real-time chat systems such as Slack or WhatsApp handle delivery guarantees, retries, dead-letter queues, and observability.
 
-QueuePulse is a production-grade distributed messaging simulator designed to make the backend mechanics behind Slack and WhatsApp-style systems visible. It demonstrates WebSockets, async queueing, retries, dead-letter handling, idempotency, delivery guarantees, PostgreSQL persistence, Redis-backed rate limiting, shared runtime controls, and a polished observability dashboard.
+Unlike basic chat apps, QueuePulse focuses on backend system design:
+
+- WebSocket-based real-time messaging
+- Queue-driven message pipeline
+- Retry and Dead Letter Queue handling
+- Idempotency and ordered delivery
+- Metrics and operational dashboard
+- AI-style insights over system health
+
+Modes:
+
+- Local Mode: SQLite + in-memory queue for no-Docker demo
+- Docker Mode: RabbitMQ + Redis + PostgreSQL + worker for distributed architecture
+
+Demo URLs:
+
+- Chat: http://localhost:3000/chat
+- Dashboard: http://localhost:3000/dashboard
+- Health: http://localhost:8000/health
 
 Portfolio description: QueuePulse simulates the backend infrastructure behind real-time messaging platforms, focusing on reliability, retry handling, delivery guarantees, and operational visibility.
 
-This is built as a recruiter-ready systems project: the UI is approachable, but the core value is the message pipeline, operational behavior, and architecture story.
-
 ## Why This Is Not A Normal Chat App
 
-The chat UI is only the producer and receiver. The real project is the backend pipeline:
+Normal chat apps usually focus on the UI: type a message, send it, and render it on screen. QueuePulse treats chat as the visible edge of a backend infrastructure problem.
 
-- Client submissions are persisted with `client_message_id` idempotency.
-- Messages receive room-level `sequence_number` ordering.
-- RabbitMQ buffers work between the API and workers.
-- Workers implement at-least-once processing, retry attempts, exponential backoff, and DLQ handoff.
-- PostgreSQL records messages, status events, and delivery attempts.
-- Redis tracks presence, quick counters, and per-user rate limits.
-- The dashboard exposes queue depth, retry pressure, DLQ count, delivery latency, throughput, and failure rate.
+The project focuses on reliability, message lifecycle, retries, failure handling, observability, and system design. A submitted message moves through an API gateway, idempotency checks, room-level ordering, queue publication, worker processing, persistence, WebSocket delivery, metrics, and operational insights.
+
+That makes QueuePulse a backend systems project rather than a CRUD chat interface. It demonstrates the kind of infrastructure thinking used to design production messaging platforms.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  Client[WebSocket Client] --> Gateway[FastAPI WebSocket Gateway]
-  Client --> API[Message API]
-  API --> RateLimit[Redis Rate Limit]
-  API --> DB[(PostgreSQL)]
-  API --> MainQ[(RabbitMQ Main Queue)]
-  MainQ --> Worker[Worker Consumer]
-  Worker --> DB
-  Worker --> Delivery[Delivery Service]
-  Worker --> RetryQ[(Retry Queue)]
-  RetryQ --> Worker
-  Worker --> DLQ[(Dead Letter Queue)]
-  Delivery --> Gateway
-  Gateway --> Client
-  DB --> Metrics[Metrics API]
-  Metrics --> Dashboard[Next.js Observability Dashboard]
+  Client[Client Browser] --> Frontend[Next.js Frontend]
+  Frontend --> Gateway[FastAPI WebSocket/API Gateway]
+  Gateway --> MessageService[Message Service]
+  MessageService --> Idempotency[Idempotency + Room Ordering]
+  Idempotency --> QueueLayer[Queue Layer]
+  QueueLayer --> Worker[Worker Consumer]
+  Worker --> Database[(Database)]
+  Worker --> Delivery[WebSocket Delivery]
+  Delivery --> Client
+  Database --> Metrics[Metrics API]
+  Metrics --> Dashboard[Metrics Dashboard]
+  Dashboard --> Insights[AI-style Health Insights]
+  Worker -- failure --> RetryQueue[Retry Queue]
+  RetryQueue --> Worker
+  RetryQueue -- max retries exceeded --> DLQ[Dead Letter Queue]
 ```
 
 ## Message Lifecycle
 
-1. User sends a message from `/chat`.
-2. API validates the room and user, applies Redis rate limiting, and checks `(room_id, client_message_id)`.
-3. API assigns the next room sequence number and persists a `queued` message.
-4. Message ID is published to RabbitMQ.
-5. Worker consumes the event, simulates delivery, writes `delivery_attempts`, and emits status events.
-6. Successful messages become `delivered` and are broadcast over WebSocket.
-7. Failed messages retry with exponential backoff.
-8. Messages exceeding max retries are marked `dead_lettered` and published to DLQ.
+1. Client sends a message from `/chat`.
+2. FastAPI validates the payload and applies rate limiting.
+3. The message service checks `client_message_id` for idempotency.
+4. A room-level `sequence_number` is assigned.
+5. The message is persisted as `queued`.
+6. The queue layer publishes the message event.
+7. A worker processes delivery and records delivery attempts.
+8. Successful messages become `delivered` and are broadcast through WebSockets.
+9. Failed messages go through retry backoff.
+10. Messages exceeding max retries are marked `dead_lettered`.
 
 ## Delivery Guarantees
 
-QueuePulse models at-least-once delivery. Duplicate submissions are safe because `client_message_id` is unique per room. Consumers are idempotent: delivered/read/dead-lettered messages are not processed again.
+QueuePulse models at-least-once delivery. Duplicate client submissions are safe because `client_message_id` is unique per room. Consumers are idempotent: already delivered, read, or dead-lettered messages are not processed again.
 
-## Database Schema
+## Local Demo Mode
 
-- `users`
-- `rooms`
-- `room_members`
-- `room_sequences`
-- `messages`
-- `message_status_events`
-- `delivery_attempts`
-
-## Local Setup
-
-### Run Without Docker
-
-Use this mode when Docker, WSL, RabbitMQ, or Redis are unavailable. QueuePulse keeps the same API and UI behavior, but runs as a local simulation:
-
-- SQLite replaces PostgreSQL.
-- In-memory queues replace RabbitMQ.
-- In-memory presence, rate limiting, and runtime controls replace Redis.
-- FastAPI starts a local background worker so messages move from `queued` to `delivered` during demos.
+Use this mode when Docker, WSL, RabbitMQ, or Redis are unavailable. Local mode does not require Docker. It uses SQLite and in-memory services, making it good for demos, screenshots, and recruiter walkthroughs.
 
 Backend:
 
-```bash
-cd backend
-python -m venv .venv
-.venv\Scripts\activate
+```powershell
+cd queuepulse\backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
 Frontend:
 
-```bash
-cd frontend
+```powershell
+cd queuepulse\frontend
 npm install
 npm run dev
 ```
 
 Open:
 
-- Frontend: http://localhost:3000
-- Backend health: http://localhost:8000/health
+- http://localhost:3000
+- http://localhost:3000/chat
+- http://localhost:3000/dashboard
+- http://localhost:8000/health
 
-For local mode, `.env` is optional because defaults are already local-first. To be explicit:
+Local mode behavior:
+
+- SQLite replaces PostgreSQL.
+- In-memory queues replace RabbitMQ.
+- In-memory presence, rate limiting, and runtime controls replace Redis.
+- FastAPI starts a background worker to process queued messages.
+- Full distributed mode requires Docker.
+
+## Docker Distributed Mode
+
+Docker mode preserves the real distributed architecture.
 
 ```bash
-cp .env.example .env
-```
-
-### Run With Docker
-
-Docker mode uses the real infrastructure profile: PostgreSQL, Redis, RabbitMQ, FastAPI backend, worker, and Next.js frontend.
-
-```bash
-cp .env.example .env
 docker compose up --build
 ```
 
-Services:
+Docker mode:
 
-- Frontend: http://localhost:3000
-- Backend: http://localhost:8000
-- RabbitMQ UI: http://localhost:15672 (`guest` / `guest`)
+- Requires Docker Desktop and WSL2 on Windows.
+- Uses RabbitMQ, Redis, PostgreSQL, FastAPI, Next.js, and a separate worker.
+- Keeps the queue/worker/storage architecture close to a production-style deployment.
 
-## Verification Commands
+On this laptop, Docker may be blocked by WSL issues, but the distributed architecture is preserved in `docker-compose.yml`.
 
-Local no-Docker verification:
+## Demo Flow
+
+1. Start backend.
+2. Start frontend.
+3. Open two browser tabs at `/chat`.
+4. Create or join the same room.
+5. Send messages.
+6. Open dashboard.
+7. Trigger simulation controls.
+8. Observe metrics and insights.
+9. Capture screenshots.
+
+Detailed walkthrough: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)
+
+## Screenshots Checklist
+
+Capture these files under `screenshots/`:
+
+- `screenshots/landing.png`
+- `screenshots/chat-two-tabs.png`
+- `screenshots/dashboard.png`
+- `screenshots/architecture.png`
+- `screenshots/health-endpoint.png`
+- `screenshots/load-test.png`
+
+More guidance: [screenshots/README.md](screenshots/README.md)
+
+## API And Observability
+
+Core endpoints:
+
+- `GET /health`
+- `GET /api/metrics`
+- `GET /api/insights`
+- `POST /api/rooms`
+- `GET /api/rooms`
+- `POST /api/messages`
+- `GET /api/messages/{room_id}`
+- `POST /api/simulate/failure-rate`
+- `POST /api/simulate/worker-delay`
+- `POST /api/simulate/load-spike`
+
+Dashboard metrics include throughput, queue depth, retry count, dead-letter count, active users, active rooms, success rate, average delivery latency, failure rate, and recent failed messages.
+
+## System Design Trade-Offs
+
+- RabbitMQ was chosen over Kafka for a cleaner local distributed setup and straightforward retry/DLQ demonstration.
+- Redis is used for presence, rate limiting, and shared runtime simulation controls in Docker mode.
+- SQLite and in-memory services make local demo mode reliable on laptops without Docker.
+- SQLAlchemy sync sessions keep the code readable for review; high-throughput production deployments could move hot paths to async database drivers.
+- The dashboard polls metrics for simplicity; production systems could stream metrics or export to Prometheus/Grafana.
+- Rule-based insights are deterministic and free; an LLM provider can be added later without changing the dashboard contract.
+
+## Local Mode Limitations
+
+- In-memory queues are single-process and reset on restart.
+- In-memory presence, rate limits, and runtime controls reset on restart.
+- SQLite replaces PostgreSQL for the local demo path.
+- Local mode is ideal for recruiter demos; Docker mode is the full distributed-system profile.
+
+## Resume Bullets
+
+- Engineered QueuePulse, a distributed real-time messaging system using FastAPI, WebSockets, and a queue-based pipeline with retry and dead-letter handling; implemented idempotency, ordered delivery, and a live observability dashboard tracking throughput, latency, and failure rates.
+
+- Designed a dual-mode architecture with local simulation and distributed Docker mode using RabbitMQ, Redis, and PostgreSQL to demonstrate scalable system design concepts and production-grade messaging workflows.
+
+## GitHub Repository Metadata
+
+Recommended repo description:
+
+Distributed real-time messaging system with queues, retries, DLQ, and observability dashboard using FastAPI, WebSockets, and Next.js.
+
+Recommended GitHub topics:
+
+- fastapi
+- websockets
+- rabbitmq
+- redis
+- postgresql
+- distributed-systems
+- system-design
+- real-time
+- queue
+- nextjs
+- observability
+
+## Verification
+
+Backend:
 
 ```bash
 cd backend
@@ -139,7 +225,7 @@ python -m pytest app/tests
 uvicorn app.main:app --reload --port 8000
 ```
 
-Frontend verification:
+Frontend:
 
 ```bash
 cd frontend
@@ -148,80 +234,11 @@ npm run build
 npm run dev
 ```
 
-Docker verification:
+Load test:
 
 ```bash
-docker compose config
-docker compose up --build
-curl http://localhost:8000/health
 python scripts/load_test.py --users 50 --messages 500 --room demo
 ```
-
-Current verification: local backend import, syntax check, health endpoint, local message delivery smoke test, backend tests, frontend production build, and `docker compose config` have passed. Full `docker compose up --build` is not required for no-Docker demo mode and may be blocked on machines with unstable WSL.
-
-For local frontend development:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-For local backend development:
-
-```bash
-cd backend
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-python -m app.workers.consumer
-```
-
-In no-Docker local mode, the separate worker command is optional because FastAPI starts an in-memory background worker automatically. In Docker mode, the dedicated worker container processes RabbitMQ messages.
-
-## Demo Script
-
-1. Open `/dashboard` and note baseline metrics.
-2. Open `/chat`, choose a room, and send messages.
-3. Return to `/dashboard` and observe throughput and latency.
-4. Set failure rate to `40%`.
-5. Send more traffic or run the load test.
-6. Watch retries, failures, and dead-letter count increase.
-7. Resume normal delivery with failure rate `0%`.
-
-For a more detailed walkthrough, see [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
-
-## Screenshots
-
-Add screenshots to `screenshots/`. See [screenshots/README.md](screenshots/README.md).
-
-- `screenshots/landing.png`
-- `screenshots/chat-two-tabs.png`
-- `screenshots/dashboard.png`
-- `screenshots/architecture.png`
-- `screenshots/health-endpoint.png`
-- `screenshots/load-test.png`
-
-## System Design Trade-Offs
-
-- RabbitMQ was chosen over Kafka for clean local setup and reliable delayed retry simulation.
-- SQLAlchemy sync sessions keep the code readable; production FastAPI deployments can move hot paths to async database drivers.
-- The dashboard uses API polling for metrics simplicity; WebSocket metrics streaming would be a natural extension.
-- Rule-based insights are deterministic and free; Gemini can be added behind `GEMINI_API_KEY` without changing the dashboard contract.
-- Local simulation mode trades distributed infrastructure fidelity for demo reliability on laptops where Docker or WSL is unavailable.
-- Docker mode preserves the real architecture with RabbitMQ, Redis, PostgreSQL, API, worker, and frontend services.
-
-## Local Mode Limitations
-
-- In-memory queues are single-process and reset on restart.
-- In-memory presence, rate limits, and runtime controls reset on restart.
-- SQLite replaces PostgreSQL for the local demo path.
-- Local mode is ideal for recruiter demos; Docker mode is the full distributed-system profile.
-
-## GitHub Topics
-
-Suggested topics: `fastapi`, `websocket`, `rabbitmq`, `redis`, `postgresql`, `distributed-systems`, `system-design`, `observability`, `queue`, `real-time-chat`, `nextjs`.
 
 ## Future Improvements
 
@@ -230,9 +247,3 @@ Suggested topics: `fastapi`, `websocket`, `rabbitmq`, `redis`, `postgresql`, `di
 - Add multi-worker consumer groups and per-room partitioning.
 - Add auth, encrypted rooms, and per-device read receipts.
 - Add Prometheus and Grafana deployment profile.
-
-## Resume Bullets
-
-- Engineered a distributed real-time messaging pipeline using FastAPI WebSockets, RabbitMQ, Redis, and PostgreSQL with at-least-once delivery guarantees.
-- Implemented idempotency keys, retry queues, dead-letter queues, and room-level message ordering to simulate production-grade chat infrastructure.
-- Built an observability dashboard tracking throughput, queue depth, delivery latency, failure rate, retry behavior, active users, and dead-letter pressure in real time.
