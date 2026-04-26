@@ -23,5 +23,4 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Generated screenshots
-screenshots/*.png
+# README screenshots are intentionally committed for GitHub preview.
