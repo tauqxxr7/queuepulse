@@ -30,6 +30,51 @@ Demo URLs:
 
 Portfolio description: QueuePulse simulates the backend infrastructure behind real-time messaging platforms, focusing on reliability, retry handling, delivery guarantees, and operational visibility.
 
+## Product Preview
+
+<p align="center">
+  <img src="screenshots/landing.png" width="800"/>
+</p>
+
+<p align="center"><b>Landing Page</b></p>
+
+<p align="center">
+  <img src="screenshots/chat-two-tabs.png" width="800"/>
+</p>
+
+<p align="center"><b>Real-time Chat</b></p>
+
+<p align="center">
+  <img src="screenshots/dashboard.png" width="800"/>
+</p>
+
+<p align="center"><b>Observability Dashboard</b></p>
+
+<p align="center">
+  <img src="screenshots/architecture.png" width="800"/>
+</p>
+
+<p align="center"><b>System Architecture</b></p>
+
+<p align="center">
+  <img src="screenshots/health-endpoint.png" width="800"/>
+</p>
+
+<p align="center"><b>Health Check Endpoint</b></p>
+
+<p align="center">
+  <img src="screenshots/load-test.png" width="800"/>
+</p>
+
+<p align="center"><b>Load Testing</b></p>
+
+These screenshots demonstrate:
+
+- Real-time WebSocket-based messaging
+- Queue-based delivery pipeline
+- Retry and Dead Letter Queue handling
+- Observability dashboard tracking system health and throughput
+
 ## Why This Is Not A Normal Chat App
 
 Normal chat apps usually focus on the UI: type a message, send it, and render it on screen. QueuePulse treats chat as the visible edge of a backend infrastructure problem.
