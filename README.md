@@ -34,6 +34,27 @@ QueuePulse models a production-style messaging pipeline with a WebSocket gateway
 Client → WebSocket Gateway → Message Queue → Worker → Retry Handler → DLQ → Observability Dashboard
 ```
 
+## 🎥 System Walkthrough / Architecture Demo
+
+- Expected file: `docs/architecture/queuepulse-architecture.gif`
+- Walkthrough notes: [docs/architecture/queuepulse-flow.md](docs/architecture/queuepulse-flow.md)
+
+This walkthrough focuses on how QueuePulse models reliability and observability rather than only showing chat UI behavior.
+
+## 🧠 System Design Focus
+
+QueuePulse demonstrates:
+
+- real-time messaging via WebSockets
+- asynchronous processing
+- retry mechanisms
+- dead-letter queue (DLQ)
+- observability patterns
+
+```text
+Client → WebSocket → Queue → Worker → Retry → DLQ → Monitoring
+```
+
 ## Features
 
 - Real-time communication over WebSockets
@@ -58,6 +79,13 @@ Client → WebSocket Gateway → Message Queue → Worker → Retry Handler → 
 - Metrics API for dashboard consumption
 - Visibility into retries, failed deliveries, queue depth, and throughput
 - Dashboard-oriented view of system behavior during load and failure simulation
+
+## ⚙️ Engineering Notes
+
+- Built with clear frontend/backend/API separation
+- Designed for deployable architecture (Vercel + Render style)
+- Uses modular structure for scalability and maintainability
+- Focused on real-world use cases, not isolated demos
 
 ## Tech Stack
 
@@ -150,6 +178,10 @@ Core recruiter-facing signals:
 ### Load Testing
 
 ![Load testing](screenshots/load-test.png)
+
+## 🚀 Deployment
+
+Deployment in progress (planned: Vercel / Render)
 
 ## Testing
 
