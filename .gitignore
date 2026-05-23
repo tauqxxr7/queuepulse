@@ -11,9 +11,12 @@ node_modules/
 .next/
 out/
 dist/
+build/
+coverage/
 
 # Env and local state
 .env
+.env.local
 *.db
 *.sqlite
 
